@@ -6,12 +6,14 @@ import sys
 from typing import *
 
 import requests
-
+import zipfile
+import chardet
+import shutil
 
 class Mytools:
     def __init__(self):
         pass
-
+    @classmethod
     def parse_log(self, filepath: str) -> Generator:
         result = {}
         with open(filepath, 'r', encoding='utf-8')as f:
@@ -23,7 +25,7 @@ class Mytools:
                 result[k] = (s+v, c+1)
             for k, (s, c) in result.items():
                 yield k, s, s/c
-
+    @classmethod
     def get_sha256(self, params: str) -> str:
         sha256 = hashlib.sha256()
         checkfile = os.path.basename(params)
@@ -31,11 +33,11 @@ class Mytools:
             with open(params, 'r', encoding='utf-8') as f:
                 r = f.read()
             sha256.update(r.encode('utf-8'))
-            return f'文件{checkfile} sha256:' + sha256.hexdigest()
+            return '文件{} sha256:'.format(checkfile) + sha256.hexdigest()
         else:
             sha256.update(params.encode('utf-8'))
             return sha256.hexdigest()
-
+    @classmethod
     def get_md5(self, params: str) -> str:
         md5 = hashlib.md5()
         checkfile = os.path.basename(params)
@@ -43,11 +45,11 @@ class Mytools:
             with open(params, 'r', encoding='utf-8') as f:
                 r = f.read()
             md5.update(r.encode('utf-8'))
-            return f'文件{checkfile} md5:' + md5.hexdigest()
+            return '文件{} md5:'.format(checkfile) + md5.hexdigest()
         else:
             md5.update(params.encode('utf-8'))
             return md5.hexdigest()
-    
+    @classmethod
     def check_proxy(self, proxy: str) -> bool:
         if isinstance(proxy, str):
             pattern = re.compile(r'^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?):([0-9]{1,5})$')
@@ -62,23 +64,30 @@ class Mytools:
                     else:
                         return False
             except Exception as e:
-                print(f'\033[1;31;40m传入的代理ip无效, 原因: {e.args}..\033[0m')
+                print('\033[1;31;40m传入的代理ip无效, 原因: {}..\033[0m'.format(e.args))
         else:
             print('请以字符串形式传入ip:port')
-    
-if __name__ == "__main__":
-    m = Mytools()
-    pattern = re.compile(r'^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?):([0-9]{1,5})$')
-    try:
-        params1 = sys.argv[1]
-        params2 = sys.argv[2]
-        if pattern.match(params1) and params2 == 'proxy':
-            print(m.check_proxy(params1))
-        if params1 and params2 == 'md5':
-            v = m.get_md5(params1)
-            print(v)
-        if params1 and params2 == 'sha256':
-            v = m.get_sha256(params1)
-            print(v)
-    except IndexError:
-        print('\033[1;31;40m请输入要检测的代理ip/计算摘要的文件路径和计算的类型..\033[0m')
+    @classmethod
+    def convert_headers(self, headers: str) -> dict:
+        headers = headers.strip().split('\n')
+        headers = {header.split(':')[0].strip():header.split(':')[1].strip() for header in headers}
+        return headers
+
+
+# if __name__ == "__main__":
+#     m = Mytools()
+#     pattern = re.compile(r'^((25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(25[0-5]|2[0-4]\d|[01]?\d\d?):([0-9]{1,5})$')
+#     try:
+#         params1 = sys.argv[1]
+#         params2 = sys.argv[2]
+#         if pattern.match(params1) and params2 == 'proxy':
+#             print(m.check_proxy(params1))
+#         if params1 and params2 == 'md5':
+#             v = m.get_md5(params1)
+#             print(v)
+#         if params1 and params2 == 'sha256':
+#             v = m.get_sha256(params1)
+#             print(v)
+#     except IndexError:
+#         print('\033[1;31;40m请输入要检测的代理ip/计算摘要的文件路径和计算的类型..\033[0m')
+
